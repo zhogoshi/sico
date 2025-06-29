@@ -26,12 +26,6 @@ jobs:
           name: java-artifacts
           path: sico/build/libs/
 
-      - name: Upload Kotlin artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kotlin-artifacts
-          path: sico-kotlin/build/libs/
-
   test:
     name: Test
     needs: build
@@ -49,12 +43,6 @@ jobs:
         with:
           name: java-artifacts
           path: sico/build/libs/
-
-      - name: Download Kotlin artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: kotlin-artifacts
-          path: sico-kotlin/build/libs/
 
       - name: Verify Tests
         run: ./gradlew test
@@ -87,19 +75,12 @@ jobs:
           name: java-artifacts
           path: sico/build/libs/
 
-      - name: Download Kotlin artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: kotlin-artifacts
-          path: sico-kotlin/build/libs/
-
       - name: Make gradlew Executable
         run: chmod +x ./gradlew
 
       - name: Create JReleaser directories
         run: |
           mkdir -p sico/build/jreleaser
-          mkdir -p sico-kotlin/build/jreleaser
 
       - name: Extract Version
         id: extract_version
@@ -118,26 +99,21 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            ## Animation System Updates
+            ## Minor changes
             
             ### Non-code changes
             - Added wiki page
-            - Removed docs from readme
-            - Removed gradle groovy implementation from readme
+            - Added documentation
 
             ### Core Module
-            - Simplified animation system by removing keyframes complexity
-            - Added support for direct value-to-value sico
-            - Implemented smooth interpolation between values
-            - Added support for custom easing functions between keyframes
-            - Enhanced elastic sico with proper easing functions
+            - Scope types moved to Enum
+            - Others ClassLoader support
+            - Optimizations
+            - Lombok usage
+            - Jetbrains Annotations
 
             ### Kotlin DSL Module
-            - Added support for keyframe-based sico with custom easing
-            - Implemented DSL for creating complex sico
-            - Added support for elastic sico with ELASTIC_BOTH easing
-            - Enhanced animation builder with from/to value support
-            - Improved animation smoothness and natural movement
+            - Removal
 
       - name: Upload Core JAR to Release
         uses: actions/upload-release-asset@v1
@@ -147,16 +123,6 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: sico/build/libs/sico-${{ env.PROJECT_VERSION }}.jar
           asset_name: sico-${{ env.PROJECT_VERSION }}.jar
-          asset_content_type: application/java-archive
-
-      - name: Upload Kotlin DSL JAR to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}.jar
-          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}.jar
           asset_content_type: application/java-archive
 
       - name: Upload Core javadocs to Release
@@ -169,16 +135,6 @@ jobs:
           asset_name: sico-${{ env.PROJECT_VERSION }}-javadoc.jar
           asset_content_type: application/java-archive
 
-      - name: Upload Kotlin DSL javadocs to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}-javadoc.jar
-          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}-javadoc.jar
-          asset_content_type: application/java-archive
-
       - name: Upload Core sources to Release
         uses: actions/upload-release-asset@v1
         env:
@@ -189,20 +145,10 @@ jobs:
           asset_name: sico-${{ env.PROJECT_VERSION }}-sources.jar
           asset_content_type: application/java-archive
 
-      - name: Upload Kotlin DSL sources to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}-sources.jar
-          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}-sources.jar
-          asset_content_type: application/java-archive
-
       - name: Publish to Maven Central
         uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1
         with:
-          arguments: --no-daemon -i sico:jreleaserConfig sico:build sico:test sico:publish sico-kotlin:jreleaserConfig sico-kotlin:build sico-kotlin:test sico-kotlin:publish
+          arguments: --no-daemon -i sico:jreleaserConfig sico:build sico:test sico:publish
         if: success()
         env:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
@@ -215,7 +161,7 @@ jobs:
       - name: Complete Release
         uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1
         with:
-          arguments: --no-daemon -i sico:jreleaserFullRelease sico-kotlin:jreleaserFullRelease
+          arguments: --no-daemon -i sico:jreleaserFullRelease
         if: success()
         env:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}

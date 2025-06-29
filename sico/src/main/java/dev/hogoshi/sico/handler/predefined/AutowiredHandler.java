@@ -7,42 +7,42 @@ import dev.hogoshi.sico.annotation.Repository;
 import dev.hogoshi.sico.annotation.Service;
 import dev.hogoshi.sico.container.Container;
 import dev.hogoshi.sico.handler.AbstractComponentHandler;
+import dev.hogoshi.sico.handler.ComponentRegisterHandler.Phase;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 
 public class AutowiredHandler extends AbstractComponentHandler {
-    private final Container container;
 
-    public AutowiredHandler(Container container) {
-        super(10, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
-        this.container = container;
+    public AutowiredHandler(@NotNull Container container) {
+        super(container, 10, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
     }
 
     @Override
     public void handle(@NotNull Class<?> componentClass) {
         try {
-            Object instance = container.resolve(componentClass);
+            Object instance = getContainer().resolve(componentClass);
             if (instance == null) {
                 return;
             }
 
             for (Field field : componentClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(Autowired.class)) {
-                    processAutowiredField(field, instance);
+                    field.setAccessible(true);
+                    
+                    if (field.get(instance) != null) {
+                        continue;
+                    }
+                    
+                    Object dependency = getContainer().resolve(field.getType());
+                    
+                    if (dependency != null) {
+                        field.set(instance, dependency);
+                    }
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error processing autowired fields for class: " + componentClass.getName(), e);
-        }
-    }
-
-    private void processAutowiredField(Field field, Object instance) throws IllegalAccessException {
-        field.setAccessible(true);
-        Object dependency = container.resolve(field.getType());
-        
-        if (field.get(instance) == null && dependency != null) {
-            field.set(instance, dependency);
+            e.printStackTrace();
         }
     }
 } 

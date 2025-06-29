@@ -17,13 +17,11 @@ import dev.hogoshi.sico.handler.AbstractComponentHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class PreDestroyHandler extends AbstractComponentHandler {
-    private final Container container;
     private final Map<Class<?>, Set<Method>> preDestroyMethods = new HashMap<>();
     private final Set<Class<?>> processedClasses = new HashSet<>();
 
     public PreDestroyHandler(Container container) {
-        super(10, Phase.REGISTRATION, Component.class, Service.class, Repository.class, Configuration.class);
-        this.container = container;
+        super(container, 10, Phase.REGISTRATION, Component.class, Service.class, Repository.class, Configuration.class);
     }
 
     @Override
@@ -47,8 +45,7 @@ public class PreDestroyHandler extends AbstractComponentHandler {
             
             processedClasses.add(componentClass);
         } catch (Exception e) {
-            System.err.println("Error processing @PreDestroy for class: " + componentClass.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Error processing @PreDestroy for class: " + componentClass.getName(), e);
         }
     }
 
@@ -79,12 +76,10 @@ public class PreDestroyHandler extends AbstractComponentHandler {
             if (method.getParameterCount() == 0) {
                 method.invoke(instance);
             } else {
-                System.err.println("@PreDestroy method should have no parameters: " + 
-                    method.getName() + " in " + instance.getClass().getName());
+                throw new IllegalStateException("@PreDestroy method should have no parameters: " + method.getName() + " in " + instance.getClass().getName());
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            System.err.println("Failed to invoke @PreDestroy method " + method.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Failed to invoke @PreDestroy method " + method.getName(), e);
         }
     }
 } 

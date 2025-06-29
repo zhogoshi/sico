@@ -5,18 +5,25 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.jetbrains.annotations.NotNull;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Scope {
 
-    String value() default "singleton";
+    Scopes value() default Scopes.SINGLETON;
 
-    final class Scopes {
-
-        public static final String SINGLETON = "singleton";
-
-        public static final String PROTOTYPE = "prototype";
+    enum Scopes {
+        /**
+         * Single instance is created and reused
+         */
+        SINGLETON,
         
-        private Scopes() {}
+        /**
+         * New instance is created each time the bean is requested
+         */
+        PROTOTYPE,
+
+        ;
     }
 } 

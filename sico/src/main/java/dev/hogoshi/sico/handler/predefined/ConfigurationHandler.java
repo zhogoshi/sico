@@ -17,12 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 public class ConfigurationHandler extends AbstractComponentHandler {
-    private final Container container;
     private final Map<String, Object> singletonBeanCache = new HashMap<>();
 
     public ConfigurationHandler(Container container) {
-        super(15, Phase.REGISTRATION, Configuration.class);
-        this.container = container;
+        super(container, 15, Phase.REGISTRATION, Configuration.class);
     }
 
     @Override
@@ -72,7 +70,7 @@ public class ConfigurationHandler extends AbstractComponentHandler {
         
         Class<?> beanType = method.getReturnType();
         
-        String scope = Scope.Scopes.SINGLETON;
+        Scope.Scopes scope = Scope.Scopes.SINGLETON;
         if (method.isAnnotationPresent(Scope.class)) {
             scope = method.getAnnotation(Scope.class).value();
         }

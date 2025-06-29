@@ -16,7 +16,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import dev.hogoshi.sico.annotation.Component;
 import dev.hogoshi.sico.annotation.Configuration;
@@ -32,45 +36,66 @@ import dev.hogoshi.sico.handler.predefined.PreDestroyHandler;
 import dev.hogoshi.sico.handler.predefined.ScheduledHandler;
 import dev.hogoshi.sico.scheduler.Lifecycle;
 import dev.hogoshi.sico.scheduler.SchedulerService;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+/**
+ * Default implementation of the Container interface.
+ * Manages component registration, dependency injection, and lifecycle management.
+ * This implementation supports singleton and prototype scopes, package scanning, and component handlers.
+ */
 public class DefaultContainer implements Container, Lifecycle {
-    private final Map<Class<?>, Object> components = new HashMap<>();
+    private static final Logger LOGGER = Logger.getLogger(DefaultContainer.class.getName());
     
-    private final Map<String, Object> namedComponents = new HashMap<>();
+    @NotNull private final Map<Class<?>, Object> components = new ConcurrentHashMap<>();
     
-    private final Map<String, BeanDefinition> beanDefinitions = new HashMap<>();
+    @NotNull private final Map<String, Object> namedComponents = new ConcurrentHashMap<>();
     
-    private final Map<Class<?>, Set<String>> typeIndex = new HashMap<>();
+    @NotNull private final Map<String, BeanDefinition> beanDefinitions = new ConcurrentHashMap<>();
     
-    private final Map<BeanDefinition, Object> prototypeFactories = new HashMap<>();
+    @NotNull private final Map<Class<?>, Set<String>> typeIndex = new ConcurrentHashMap<>();
     
-    private final Set<Class<?>> registeredClasses = new HashSet<>();
-    private final Set<Class<?>> processingClasses = new HashSet<>();
-    private final List<ComponentRegisterHandler> handlers = new ArrayList<>();
-    private final Set<Class<? extends Annotation>> componentAnnotations = new HashSet<>(Arrays.asList(
+    @NotNull private final Map<BeanDefinition, Object> prototypeFactories = new ConcurrentHashMap<>();
+    
+    @NotNull private final Set<Class<?>> registeredClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    @NotNull private final Set<Class<?>> processingClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    @NotNull private final List<ComponentRegisterHandler> handlers = new CopyOnWriteArrayList<>();
+    @NotNull private final Set<Class<? extends Annotation>> componentAnnotations = new HashSet<>(Arrays.asList(
             Component.class, Service.class, Repository.class, Configuration.class
     ));
-    private PreDestroyHandler preDestroyHandler;
-    private ScheduledHandler scheduledHandler;
-    private ConfigurationHandler configurationHandler;
-    private SchedulerService schedulerService;
-    private boolean closed = false;
-    private boolean running = false;
+    
+    @Nullable private PreDestroyHandler preDestroyHandler;
+    @Nullable private ScheduledHandler scheduledHandler;
+    @Nullable private ConfigurationHandler configurationHandler;
+    @NotNull @Getter private final SchedulerService schedulerService;
+    private volatile boolean closed = false;
+    private volatile boolean running = false;
 
+    /**
+     * Creates a new DefaultContainer with a new SchedulerService.
+     */
     public DefaultContainer() {
         this(new SchedulerService());
     }
     
-    public DefaultContainer(SchedulerService schedulerService) {
+    /**
+     * Creates a new DefaultContainer with the provided SchedulerService.
+     *
+     * @param schedulerService the scheduler service to use
+     */
+    public DefaultContainer(@NotNull SchedulerService schedulerService) {
         this.schedulerService = schedulerService;
         handlers.add(new AutowiredHandler(this));
         handlers.add(new PostConstructHandler(this));
         handlers.add(preDestroyHandler = new PreDestroyHandler(this));
         handlers.add(scheduledHandler = new ScheduledHandler(this, schedulerService));
-        handlers.add(new ConfigurationHandler(this));
+        handlers.add(configurationHandler = new ConfigurationHandler(this));
     }
 
+    /**
+     * Starts the container and its scheduler service.
+     */
     @Override
     public void start() {
         if (running) {
@@ -84,6 +109,9 @@ public class DefaultContainer implements Container, Lifecycle {
         running = true;
     }
 
+    /**
+     * Stops the container and its scheduler service.
+     */
     @Override
     public void stop() {
         if (!running) {
@@ -101,12 +129,26 @@ public class DefaultContainer implements Container, Lifecycle {
         running = false;
     }
 
+    /**
+     * Checks if the container is running.
+     *
+     * @return true if the container is running, false otherwise
+     */
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    /**
+     * Resolves a component by type.
+     *
+     * @param <T> the type of component to resolve
+     * @param clazz the class of the component to resolve
+     * @return the component instance, or null if no component of that type exists
+     * @throws IllegalStateException if the container is closed
+     */
     @Override
+    @Nullable
     public <T> T resolve(@NotNull Class<T> clazz) {
         if (closed) {
             throw new IllegalStateException("Container is closed");
@@ -114,7 +156,7 @@ public class DefaultContainer implements Container, Lifecycle {
         
         Object component = components.get(clazz);
         if (component != null) {
-            String scope = determineComponentScope(clazz);
+            Scope.Scopes scope = determineComponentScope(clazz);
             if (scope.equals(Scope.Scopes.PROTOTYPE)) {
                 try {
                     return clazz.cast(createNewInstance(clazz));
@@ -145,7 +187,17 @@ public class DefaultContainer implements Container, Lifecycle {
         return null;
     }
     
+    /**
+     * Resolves a component by name and type.
+     *
+     * @param <T> the type of component to resolve
+     * @param name the name of the component to resolve
+     * @param clazz the class of the component to resolve
+     * @return the component instance, or null if no component with that name and type exists
+     * @throws IllegalStateException if the container is closed
+     */
     @Override
+    @Nullable
     public <T> T resolve(@NotNull String name, @NotNull Class<T> clazz) {
         if (closed) {
             throw new IllegalStateException("Container is closed");
@@ -181,6 +233,14 @@ public class DefaultContainer implements Container, Lifecycle {
         return null;
     }
 
+    /**
+     * Registers a component class with the container.
+     * This creates an instance of the class and processes it with the appropriate handlers.
+     *
+     * @param clazz the class to register
+     * @throws IllegalStateException if the container is closed or if circular dependency is detected
+     * @throws RuntimeException if registration fails
+     */
     @Override
     public void register(@NotNull Class<?> clazz) {
         if (closed) {
@@ -215,7 +275,7 @@ public class DefaultContainer implements Container, Lifecycle {
             
             String name = determineComponentName(clazz);
             
-            String scope = determineComponentScope(clazz);
+            Scope.Scopes scope = determineComponentScope(clazz);
             
             BeanDefinition definition = BeanDefinition.forClass(name, clazz, scope, true);
             registerBeanDefinition(definition);
@@ -233,6 +293,12 @@ public class DefaultContainer implements Container, Lifecycle {
         }
     }
     
+    /**
+     * Registers a bean definition with the container.
+     * 
+     * @param beanDefinition the bean definition to register
+     * @throws IllegalStateException if the container is closed
+     */
     @Override
     public void registerBeanDefinition(@NotNull BeanDefinition beanDefinition) {
         if (closed) {
@@ -244,7 +310,7 @@ public class DefaultContainer implements Container, Lifecycle {
         
         beanDefinitions.put(name, beanDefinition);
         
-        typeIndex.computeIfAbsent(type, k -> new HashSet<>()).add(name);
+        typeIndex.computeIfAbsent(type, k -> Collections.newSetFromMap(new ConcurrentHashMap<>())).add(name);
         
         if (beanDefinition.isFactoryMethod() && beanDefinition.isPrototype()) {
             prototypeFactories.put(beanDefinition, beanDefinition.getDeclaringInstance());
@@ -260,33 +326,50 @@ public class DefaultContainer implements Container, Lifecycle {
         }
     }
     
+    /**
+     * Registers a bean instance with the container.
+     * 
+     * @param name the name of the bean
+     * @param instance the bean instance
+     * @throws IllegalStateException if the container is closed
+     */
     @Override
     public void registerBean(@NotNull String name, @NotNull Object instance) {
         if (closed) {
             throw new IllegalStateException("Container is closed");
         }
         
-        if (name == null || instance == null) {
-            return;
-        }
-        
         namedComponents.put(name, instance);
         
         Class<?> type = instance.getClass();
-        typeIndex.computeIfAbsent(type, k -> new HashSet<>()).add(name);
+        typeIndex.computeIfAbsent(type, k -> Collections.newSetFromMap(new ConcurrentHashMap<>())).add(name);
         
         if (!components.containsKey(type)) {
             components.put(type, instance);
         }
     }
     
-    private Object createBeanFromDefinition(BeanDefinition definition) {
+    /**
+     * Creates a bean instance from a bean definition.
+     * 
+     * @param definition the bean definition
+     * @return the bean instance, or null if creation fails
+     * @throws BeanCreationException if an error occurs creating the bean
+     */
+    @Nullable
+    private Object createBeanFromDefinition(@NotNull BeanDefinition definition) {
         try {
             if (definition.isFactoryMethod()) {
                 Method factoryMethod = definition.getFactoryMethod();
+                if (factoryMethod == null) {
+                    return null;
+                }
                 factoryMethod.setAccessible(true);
                 
                 Object factoryInstance = definition.getDeclaringInstance();
+                if (factoryInstance == null) {
+                    return null;
+                }
                 
                 Parameter[] parameters = factoryMethod.getParameters();
                 Object[] args = new Object[parameters.length];
@@ -296,7 +379,7 @@ public class DefaultContainer implements Container, Lifecycle {
                     args[i] = resolve(paramType);
                     
                     if (args[i] == null) {
-                        System.err.println("Failed to resolve dependency of type " + paramType.getName() + 
+                        throw new BeanCreationException("Failed to resolve dependency of type " + paramType.getName() + 
                             " for bean factory method: " + factoryMethod.getName());
                     }
                 }
@@ -318,13 +401,18 @@ public class DefaultContainer implements Container, Lifecycle {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error creating bean: " + definition.getName());
-            e.printStackTrace();
-            return null;
+            throw new BeanCreationException("Error creating bean: " + definition.getName(), e);
         }
     }
     
-    private String determineComponentName(Class<?> clazz) {
+    /**
+     * Determines the component name for a class.
+     * 
+     * @param clazz the class
+     * @return the component name
+     */
+    @NotNull
+    private String determineComponentName(@NotNull Class<?> clazz) {
         if (clazz.isAnnotationPresent(Component.class)) {
             String name = clazz.getAnnotation(Component.class).value();
             if (!name.isEmpty()) {
@@ -357,7 +445,14 @@ public class DefaultContainer implements Container, Lifecycle {
         return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
     }
     
-    private String determineComponentScope(Class<?> clazz) {
+    /**
+     * Determines the scope for a component class.
+     * 
+     * @param clazz the class
+     * @return the scope
+     */
+    @NotNull
+    private Scope.Scopes determineComponentScope(@NotNull Class<?> clazz) {
         if (clazz.isAnnotationPresent(Scope.class)) {
             return clazz.getAnnotation(Scope.class).value();
         }
@@ -365,7 +460,14 @@ public class DefaultContainer implements Container, Lifecycle {
         return Scope.Scopes.SINGLETON;
     }
     
-    private Constructor<?> findSuitableConstructor(Class<?> clazz) {
+    /**
+     * Finds a suitable constructor for a class.
+     * 
+     * @param clazz the class
+     * @return the constructor, or null if none is found
+     */
+    @Nullable
+    private Constructor<?> findSuitableConstructor(@NotNull Class<?> clazz) {
         Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         
         for (Constructor<?> constructor : constructors) {
@@ -385,7 +487,15 @@ public class DefaultContainer implements Container, Lifecycle {
         return null;
     }
     
-    private Object[] resolveConstructorParameters(Constructor<?> constructor) {
+    /**
+     * Resolves the parameters for a constructor.
+     * 
+     * @param constructor the constructor
+     * @return the resolved parameters
+     * @throws IllegalStateException if a dependency cannot be resolved
+     */
+    @NotNull
+    private Object[] resolveConstructorParameters(@NotNull Constructor<?> constructor) {
         Parameter[] parameters = constructor.getParameters();
         Object[] args = new Object[parameters.length];
         
@@ -402,7 +512,13 @@ public class DefaultContainer implements Container, Lifecycle {
         return args;
     }
     
-    private boolean isComponent(Class<?> clazz) {
+    /**
+     * Checks if a class is a component.
+     * 
+     * @param clazz the class
+     * @return true if the class is a component
+     */
+    private boolean isComponent(@NotNull Class<?> clazz) {
         for (Class<? extends Annotation> annotationType : componentAnnotations) {
             if (clazz.isAnnotationPresent(annotationType)) {
                 return true;
@@ -411,35 +527,65 @@ public class DefaultContainer implements Container, Lifecycle {
         return false;
     }
     
-    private void processHandlersForPhase(Class<?> clazz, Phase phase) {
-        Collections.sort(handlers);
+    /**
+     * Processes handlers for a phase for a component class.
+     * 
+     * @param clazz the class
+     * @param phase the phase
+     */
+    private void processHandlersForPhase(@NotNull Class<?> clazz, @NotNull Phase phase) {
+        List<ComponentRegisterHandler> sortedHandlers = new ArrayList<>(handlers);
+        Collections.sort(sortedHandlers);
         
-        for (ComponentRegisterHandler handler : handlers) {
+        for (ComponentRegisterHandler handler : sortedHandlers) {
             if (handler.getPhase() == phase && handler.supports(clazz)) {
                 handler.handle(clazz);
             }
         }
     }
 
+    /**
+     * Scans the specified packages for components and registers them in the container.
+     * 
+     * @param filter a predicate to filter class names during scanning
+     * @param packageNames the package names to scan
+     */
     @Override
     public void scan(@NotNull Predicate<String> filter, String... packageNames) {
+        scan(filter, Thread.currentThread().getContextClassLoader(), packageNames);
+    }
+
+    /**
+     * Scans the specified packages using a custom class loader and registers the found components in the container.
+     * 
+     * @param filter a predicate to filter class names during scanning
+     * @param classLoader the class loader to use for scanning
+     * @param packageNames the package names to scan
+     * @throws IllegalStateException if the container is closed
+     */
+    @Override
+    public void scan(@NotNull Predicate<String> filter, @NotNull ClassLoader classLoader, String... packageNames) {
         if (closed) {
             throw new IllegalStateException("Container is closed");
         }
         
         for (String packageName : packageNames) {
             try {
-                scanPackage(packageName, filter);
+                scanPackage(packageName, filter, classLoader);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Error scanning package: " + packageName, e);
             }
         }
         
-        for (Class<?> clazz : new HashSet<>(registeredClasses)) {
+        Set<Class<?>> classesToProcess = new HashSet<>(registeredClasses);
+        for (Class<?> clazz : classesToProcess) {
             processHandlersForPhase(clazz, Phase.POST_PROCESSING);
         }
     }
     
+    /**
+     * Closes the container and releases all resources.
+     */
     @Override
     public void close() {
         if (closed) {
@@ -463,40 +609,56 @@ public class DefaultContainer implements Container, Lifecycle {
             
             closed = true;
         } catch (Exception e) {
-            System.err.println("Error closing container");
-            e.printStackTrace();
+            throw new ContainerException("Error closing container", e);
         }
     }
     
-    private void scanPackage(String packageName, Predicate<String> filter) throws IOException, ClassNotFoundException {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    /**
+     * Scans a package for components.
+     * 
+     * @param packageName the package name
+     * @param filter the filter
+     * @param classLoader the class loader
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if a class cannot be found
+     */
+    private void scanPackage(@NotNull String packageName, @NotNull Predicate<String> filter, @NotNull ClassLoader classLoader) throws IOException, ClassNotFoundException {
         String path = packageName.replace('.', '/');
         Enumeration<URL> resources = classLoader.getResources(path);
         
         while (resources.hasMoreElements()) {
             URL resource = resources.nextElement();
             File directory = new File(resource.getFile());
-            scanDirectory(directory, packageName, filter);
+            scanDirectory(directory, packageName, filter, classLoader);
         }
     }
     
-    private void scanDirectory(File directory, String packageName, Predicate<String> filter) throws ClassNotFoundException {
+    /**
+     * Scans a directory for components.
+     * 
+     * @param directory the directory
+     * @param packageName the package name
+     * @param filter the filter
+     * @param classLoader the class loader
+     * @throws ClassNotFoundException if a class cannot be found
+     */
+    private void scanDirectory(@NotNull File directory, @NotNull String packageName, @NotNull Predicate<String> filter, @NotNull ClassLoader classLoader) throws ClassNotFoundException {
         if (directory.exists()) {
             File[] files = directory.listFiles();
             if (files != null) {
                 for (File file : files) {
                     if (file.isDirectory()) {
-                        scanDirectory(file, packageName + "." + file.getName(), filter);
+                        scanDirectory(file, packageName + "." + file.getName(), filter, classLoader);
                     } else if (file.getName().endsWith(".class")) {
                         String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
                         if (filter.test(className)) {
                             try {
-                                Class<?> clazz = Class.forName(className);
+                                Class<?> clazz = Class.forName(className, true, classLoader);
                                 if (isComponent(clazz)) {
                                     register(clazz);
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                throw new ComponentScanException("Error loading class: " + className, e);
                             }
                         }
                     }
@@ -505,15 +667,33 @@ public class DefaultContainer implements Container, Lifecycle {
         }
     }
     
-    public void addHandler(ComponentRegisterHandler handler) {
+    /**
+     * Adds a component register handler to the container.
+     * 
+     * @param handler the handler
+     */
+    public void addHandler(@NotNull ComponentRegisterHandler handler) {
         handlers.add(handler);
     }
     
-    public void removeHandler(ComponentRegisterHandler handler) {
+    /**
+     * Removes a component register handler from the container.
+     * 
+     * @param handler the handler
+     */
+    public void removeHandler(@NotNull ComponentRegisterHandler handler) {
         handlers.remove(handler);
     }
 
-    private Object createNewInstance(Class<?> clazz) throws Exception {
+    /**
+     * Creates a new instance of a class.
+     * 
+     * @param clazz the class
+     * @return the new instance
+     * @throws Exception if an error occurs
+     */
+    @Nullable
+    private Object createNewInstance(@NotNull Class<?> clazz) throws Exception {
         Constructor<?> constructor = findSuitableConstructor(clazz);
         if (constructor == null) {
             throw new IllegalStateException("No suitable constructor found for class: " + clazz.getName());
@@ -536,5 +716,44 @@ public class DefaultContainer implements Container, Lifecycle {
         }
         
         return instance;
+    }
+    
+    /**
+     * Exception thrown when an error occurs creating a bean.
+     */
+    public static class BeanCreationException extends RuntimeException {
+        public BeanCreationException(String message) {
+            super(message);
+        }
+        
+        public BeanCreationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    /**
+     * Exception thrown when an error occurs in the container.
+     */
+    public static class ContainerException extends RuntimeException {
+        public ContainerException(String message) {
+            super(message);
+        }
+        
+        public ContainerException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    /**
+     * Exception thrown when an error occurs during component scanning.
+     */
+    public static class ComponentScanException extends RuntimeException {
+        public ComponentScanException(String message) {
+            super(message);
+        }
+        
+        public ComponentScanException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 } 

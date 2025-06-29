@@ -15,12 +15,10 @@ import dev.hogoshi.sico.handler.AbstractComponentHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class PostConstructHandler extends AbstractComponentHandler {
-    private final Container container;
     private final Set<Class<?>> initializedClasses = new HashSet<>();
 
     public PostConstructHandler(Container container) {
-        super(20, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
-        this.container = container;
+        super(container, 20, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
     }
 
     @Override
@@ -43,8 +41,7 @@ public class PostConstructHandler extends AbstractComponentHandler {
             
             initializedClasses.add(componentClass);
         } catch (Exception e) {
-            System.err.println("Error processing @PostConstruct for class: " + componentClass.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Error processing @PostConstruct for class: " + componentClass.getName(), e);
         }
     }
     
@@ -54,12 +51,10 @@ public class PostConstructHandler extends AbstractComponentHandler {
             if (method.getParameterCount() == 0) {
                 method.invoke(instance);
             } else {
-                System.err.println("@PostConstruct method should have no parameters: " + 
-                    method.getName() + " in " + instance.getClass().getName());
+                throw new IllegalStateException("@PostConstruct method should have no parameters: " + method.getName() + " in " + instance.getClass().getName());
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            System.err.println("Failed to invoke @PostConstruct method " + method.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Failed to invoke @PostConstruct method " + method.getName(), e);
         }
     }
 } 

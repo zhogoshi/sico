@@ -1,27 +1,41 @@
 package dev.hogoshi.sico.handler;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class AbstractComponentHandler implements ComponentRegisterHandler {
-    private final Set<Class<? extends Annotation>> supportedAnnotations;
-    private final int priority;
-    private final Phase phase;
+import org.jetbrains.annotations.NotNull;
 
-    @SafeVarargs
-    protected AbstractComponentHandler(int priority, Class<? extends Annotation>... supportedAnnotations) {
-        this(priority, Phase.REGISTRATION, supportedAnnotations);
-    }
+import dev.hogoshi.sico.container.Container;
+import lombok.Getter;
+
+public abstract class AbstractComponentHandler implements ComponentRegisterHandler {
+
+    @NotNull
+    protected final Container container;
     
-    @SafeVarargs
-    protected AbstractComponentHandler(int priority, Phase phase, Class<? extends Annotation>... supportedAnnotations) {
-        this.priority = priority;
+    @Getter
+    @NotNull
+    protected final Phase phase;
+    
+    @Getter
+    protected final int order;
+    
+    @NotNull
+    private final Set<Class<? extends Annotation>> supportedAnnotations;
+
+    protected AbstractComponentHandler(@NotNull Container container, int order, @NotNull Phase phase,
+                                     @NotNull Class<? extends Annotation>... supportedAnnotations) {
+        this.container = container;
+        this.order = order;
         this.phase = phase;
         this.supportedAnnotations = new HashSet<>(Arrays.asList(supportedAnnotations));
+    }
+    
+    protected AbstractComponentHandler(@NotNull Container container, int order, 
+                                     @NotNull Class<? extends Annotation>... supportedAnnotations) {
+        this(container, order, Phase.REGISTRATION, supportedAnnotations);
     }
 
     @Override
@@ -30,8 +44,8 @@ public abstract class AbstractComponentHandler implements ComponentRegisterHandl
             return true;
         }
         
-        for (Class<? extends Annotation> annotation : supportedAnnotations) {
-            if (componentClass.isAnnotationPresent(annotation)) {
+        for (Class<? extends Annotation> annotationClass : supportedAnnotations) {
+            if (componentClass.isAnnotationPresent(annotationClass)) {
                 return true;
             }
         }
@@ -39,13 +53,8 @@ public abstract class AbstractComponentHandler implements ComponentRegisterHandl
         return false;
     }
 
-    @Override
-    public int getPriority() {
-        return priority;
-    }
-    
-    @Override
-    public @NotNull Phase getPhase() {
-        return phase;
+    @NotNull
+    protected Container getContainer() {
+        return container;
     }
 } 

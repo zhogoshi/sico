@@ -2,24 +2,54 @@ package dev.hogoshi.sico.container;
 
 import java.lang.reflect.Method;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import dev.hogoshi.sico.annotation.Scope;
+import lombok.Getter;
+
+/**
+ * Represents a bean definition in the container.
+ * A bean definition contains metadata about a bean, such as its name, class, scope, and whether it's a candidate for autowiring.
+ * For factory method beans, it also contains the declaring instance and factory method.
+ */
+@Getter
 public class BeanDefinition {
-    private final String name;
-    private final Class<?> beanClass;
-    private final String scope;
+    @NotNull private final String name;
+    @NotNull private final Class<?> beanClass;
+    @NotNull private final Scope.Scopes scope;
     private final boolean autowireCandidate;
     
-    private Object declaringInstance;
-    private Method factoryMethod;
+    @Nullable private Object declaringInstance;
+    @Nullable private Method factoryMethod;
     
-    private BeanDefinition(String name, Class<?> beanClass, String scope, boolean autowireCandidate) {
+    /**
+     * Creates a new bean definition for a class.
+     *
+     * @param name the name of the bean
+     * @param beanClass the class of the bean
+     * @param scope the scope of the bean
+     * @param autowireCandidate whether the bean is a candidate for autowiring
+     */
+    private BeanDefinition(@NotNull String name, @NotNull Class<?> beanClass, @NotNull Scope.Scopes scope, boolean autowireCandidate) {
         this.name = name;
         this.beanClass = beanClass;
         this.scope = scope;
         this.autowireCandidate = autowireCandidate;
     }
     
-    private BeanDefinition(String name, Class<?> beanClass, String scope, boolean autowireCandidate, 
-                          Object declaringInstance, Method factoryMethod) {
+    /**
+     * Creates a new bean definition for a factory method.
+     *
+     * @param name the name of the bean
+     * @param beanClass the class of the bean
+     * @param scope the scope of the bean
+     * @param autowireCandidate whether the bean is a candidate for autowiring
+     * @param declaringInstance the instance that declares the factory method
+     * @param factoryMethod the factory method
+     */
+    private BeanDefinition(@NotNull String name, @NotNull Class<?> beanClass, @NotNull Scope.Scopes scope, boolean autowireCandidate,
+                           @Nullable Object declaringInstance, @Nullable Method factoryMethod) {
         this.name = name;
         this.beanClass = beanClass;
         this.scope = scope;
@@ -28,52 +58,71 @@ public class BeanDefinition {
         this.factoryMethod = factoryMethod;
     }
 
-    public static BeanDefinition forClass(String name, Class<?> beanClass, String scope, boolean autowireCandidate) {
+    /**
+     * Creates a new bean definition for a class.
+     *
+     * @param name the name of the bean
+     * @param beanClass the class of the bean
+     * @param scope the scope of the bean
+     * @param autowireCandidate whether the bean is a candidate for autowiring
+     * @return the bean definition
+     */
+    @NotNull
+    public static BeanDefinition forClass(@NotNull String name, @NotNull Class<?> beanClass, @NotNull Scope.Scopes scope, boolean autowireCandidate) {
         return new BeanDefinition(name, beanClass, scope, autowireCandidate);
     }
 
-    public static BeanDefinition forMethod(String name, Class<?> beanClass, String scope, boolean autowireCandidate,
-                                          Object declaringInstance, Method factoryMethod) {
+    /**
+     * Creates a new bean definition for a factory method.
+     *
+     * @param name the name of the bean
+     * @param beanClass the class of the bean
+     * @param scope the scope of the bean
+     * @param autowireCandidate whether the bean is a candidate for autowiring
+     * @param declaringInstance the instance that declares the factory method
+     * @param factoryMethod the factory method
+     * @return the bean definition
+     */
+    @NotNull
+    public static BeanDefinition forMethod(@NotNull String name, @NotNull Class<?> beanClass, @NotNull Scope.Scopes scope, boolean autowireCandidate,
+                                           @NotNull Object declaringInstance, @NotNull Method factoryMethod) {
         return new BeanDefinition(name, beanClass, scope, autowireCandidate, declaringInstance, factoryMethod);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Class<?> getBeanClass() {
-        return beanClass;
-    }
-
-    public String getScope() {
-        return scope;
-    }
-
+    /**
+     * Checks if the bean is a singleton.
+     *
+     * @return true if the bean is a singleton
+     */
     public boolean isSingleton() {
-        return scope.equals("singleton");
+        return scope.equals(Scope.Scopes.SINGLETON);
     }
 
+    /**
+     * Checks if the bean is a prototype.
+     *
+     * @return true if the bean is a prototype
+     */
     public boolean isPrototype() {
-        return scope.equals("prototype");
+        return scope.equals(Scope.Scopes.PROTOTYPE);
     }
 
-    public boolean isAutowireCandidate() {
-        return autowireCandidate;
-    }
-
+    /**
+     * Checks if the bean is created using a factory method.
+     *
+     * @return true if the bean is created using a factory method
+     */
     public boolean isFactoryMethod() {
         return factoryMethod != null;
     }
 
-    public Object getDeclaringInstance() {
-        return declaringInstance;
-    }
-
-    public Method getFactoryMethod() {
-        return factoryMethod;
-    }
-    
+    /**
+     * Returns a string representation of the bean definition.
+     *
+     * @return a string representation of the bean definition
+     */
     @Override
+    @NotNull
     public String toString() {
         StringBuilder sb = new StringBuilder("BeanDefinition{");
         sb.append("name='").append(name).append('\'');

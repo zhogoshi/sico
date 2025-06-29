@@ -3,7 +3,7 @@
 A lightweight, powerful Inversion of Control (IoC) for Java and Kotlin applications, inspired by Spring but with a minimalist approach.
 
 ## Showcase
-> You can check [demo examples](sico/src/test/java/dev/hogoshi/sico/) or find all info on [wiki](https://github.com/zhogoshi/sico/wiki) page
+> You can check [demo examples](sico/src/test/java/dev/hogoshi/sico/) page or docs on spring page.
 
 ## Features
 
@@ -14,7 +14,6 @@ A lightweight, powerful Inversion of Control (IoC) for Java and Kotlin applicati
 - Support for different bean scopes (singleton, prototype)
 - Configuration classes with @Bean and @Scope methods
 - Circular dependency detection
-- Kotlin DSL support
 
 ## Installation
 
@@ -26,9 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.hogoshi.sico:sico:1.0.0")
-    // or kotlin one
-    implementation("dev.hogoshi.sico:sico-kotlin:1.0.0")
+    implementation("dev.hogoshi.sico:sico:1.0.1")
 }
 ```
 
@@ -39,23 +36,14 @@ dependencies {
     <dependency>
         <groupId>dev.hogoshi.sico</groupId>
         <artifactId>sico</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </dependency>
-    <!-- or kotlin one
-    <dependency>
-        <groupId>dev.hogoshi.sico</groupId>
-        <artifactId>sico-kotlin</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-    -->
 </dependencies>
 ```
 
-> Note: Replace `1.0.0` with the desired version tag from the [releases page](https://github.com/zhogoshi/sico/releases).
+> Note: Replace `1.0.1` with the desired version tag from the [releases page](https://github.com/zhogoshi/sico/releases).
 
 ## Usage
-
-### Java
 
 ```java
 // Start and scan packages for components
@@ -71,27 +59,6 @@ MyService service = sico.resolve(MyService.class);
 
 // Cleanup resources and call predestroy callbacks
 sico.close();
-```
-
-### Kotlin
-
-```kotlin
-// Create and configure the container using DSL
-val container = ioc {
-    scan("com.example")
-    scan("org.example.another")
-    register(MyService::class.java)
-    
-    // You can also use reified type parameters
-    register<MyRepository>()
-}
-
-// Resolve dependencies
-val service = container.get<MyService>()
-val controller = container.get<MyController>("myController")
-
-// Cleanup resources
-container.close()
 ```
 
 ## License

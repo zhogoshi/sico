@@ -18,13 +18,11 @@ import dev.hogoshi.sico.scheduler.SchedulerService;
 import org.jetbrains.annotations.NotNull;
 
 public class ScheduledHandler extends AbstractComponentHandler {
-    private final Container container;
     private final SchedulerService schedulerService;
     private final Map<Class<?>, List<String>> componentTaskIds = new HashMap<>();
     
     public ScheduledHandler(Container container, SchedulerService schedulerService) {
-        super(50, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
-        this.container = container;
+        super(container, 50, Phase.POST_PROCESSING, Component.class, Service.class, Repository.class, Configuration.class);
         this.schedulerService = schedulerService;
     }
 
@@ -42,8 +40,7 @@ public class ScheduledHandler extends AbstractComponentHandler {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error processing @Scheduled for class: " + componentClass.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Error processing @Scheduled for class: " + componentClass.getName(), e);
         }
     }
     
@@ -51,9 +48,7 @@ public class ScheduledHandler extends AbstractComponentHandler {
         Scheduled annotation = method.getAnnotation(Scheduled.class);
         
         if (method.getParameterCount() > 0) {
-            System.err.println("@Scheduled method must have no parameters: " + 
-                method.getName() + " in " + instance.getClass().getName());
-            return;
+            throw new IllegalArgumentException("@Scheduled method must have no params: " + method.getName() + " in " + instance.getClass().getName());
         }
         
         long interval = annotation.interval();
@@ -65,12 +60,8 @@ public class ScheduledHandler extends AbstractComponentHandler {
             String taskId = schedulerService.scheduleTask(instance, method, initialDelay, interval, unit, fixedRate);
             
             componentTaskIds.computeIfAbsent(instance.getClass(), k -> new ArrayList<>()).add(taskId);
-            
-            System.out.println("Scheduled task registered: " + instance.getClass().getName() + "." + 
-                method.getName() + " (interval: " + interval + " " + unit.name().toLowerCase() + ")");
         } else {
-            System.err.println("Unable to schedule task - scheduler service is not running: " + 
-                instance.getClass().getName() + "." + method.getName());
+            throw new IllegalStateException("Unable to schedule task - scheduler service isn't running: " + instance.getClass().getName() + "." + method.getName());
         }
     }
 

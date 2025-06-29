@@ -1,4 +1,3 @@
 include(
-    "sico",
-    "sico-kotlin"
+    "sico"
 )
