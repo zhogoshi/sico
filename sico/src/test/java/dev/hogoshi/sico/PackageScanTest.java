@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,29 +7,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestComponents.LifecycleComponent;
-import dev.hogoshi.sioc.test.TestComponents.TestComponent;
-import dev.hogoshi.sioc.test.TestComponents.TestService;
-import dev.hogoshi.sioc.test.TestConfig.SimpleBean;
+import dev.hogoshi.sico.test.TestComponents.LifecycleComponent;
+import dev.hogoshi.sico.test.TestComponents.TestComponent;
+import dev.hogoshi.sico.test.TestComponents.TestService;
+import dev.hogoshi.sico.test.TestConfig.SimpleBean;
 
 public class PackageScanTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
     }
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testPackageScan() {
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -37,18 +37,18 @@ public class PackageScanTest {
             Thread.currentThread().interrupt();
         }
         
-        TestService service = sioc.resolve(TestService.class);
+        TestService service = sico.resolve(TestService.class);
         assertNotNull(service, "TestService should be found");
         
-        TestComponent component = sioc.resolve(TestComponent.class);
+        TestComponent component = sico.resolve(TestComponent.class);
         assertNotNull(component, "TestComponent should be found");
         assertNotNull(component.getService(), "TestComponent should have autowired service");
         
-        LifecycleComponent lifecycleComponent = sioc.resolve(LifecycleComponent.class);
+        LifecycleComponent lifecycleComponent = sico.resolve(LifecycleComponent.class);
         assertNotNull(lifecycleComponent, "LifecycleComponent should be found");
         assertTrue(lifecycleComponent.isInitialized(), "PostConstruct should be called");
         
-        SimpleBean simpleBean = sioc.resolve("simpleBean", SimpleBean.class);
+        SimpleBean simpleBean = sico.resolve("simpleBean", SimpleBean.class);
         assertNotNull(simpleBean, "SimpleBean should be found");
         
         assertFalse(lifecycleComponent.isDestroyed(), "PreDestroy should not be called yet");

@@ -1,1 +1,4 @@
-rootProject.name = "sioc"
+include(
+    "sico",
+    "sico-kotlin"
+)

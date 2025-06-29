@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -7,20 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestComponents.DefaultScopeComponent;
-import dev.hogoshi.sioc.test.TestComponents.PrototypeComponent;
-import dev.hogoshi.sioc.test.TestComponents.SingletonComponent;
+import dev.hogoshi.sico.test.TestComponents.DefaultScopeComponent;
+import dev.hogoshi.sico.test.TestComponents.PrototypeComponent;
+import dev.hogoshi.sico.test.TestComponents.SingletonComponent;
 
 public class ScopeTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
 
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -31,13 +31,13 @@ public class ScopeTest {
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testSingletonScope() {
-        SingletonComponent instance1 = sioc.resolve(SingletonComponent.class);
-        SingletonComponent instance2 = sioc.resolve(SingletonComponent.class);
+        SingletonComponent instance1 = sico.resolve(SingletonComponent.class);
+        SingletonComponent instance2 = sico.resolve(SingletonComponent.class);
         
         assertNotNull(instance1, "First instance should not be null");
         assertNotNull(instance2, "Second instance should not be null");
@@ -46,8 +46,8 @@ public class ScopeTest {
     
     @Test
     void testPrototypeScope() {
-        PrototypeComponent instance1 = sioc.resolve(PrototypeComponent.class);
-        PrototypeComponent instance2 = sioc.resolve(PrototypeComponent.class);
+        PrototypeComponent instance1 = sico.resolve(PrototypeComponent.class);
+        PrototypeComponent instance2 = sico.resolve(PrototypeComponent.class);
         
         assertNotNull(instance1, "First instance should not be null");
         assertNotNull(instance2, "Second instance should not be null");
@@ -57,8 +57,8 @@ public class ScopeTest {
     
     @Test
     void testDefaultScope() {
-        DefaultScopeComponent instance1 = sioc.resolve(DefaultScopeComponent.class);
-        DefaultScopeComponent instance2 = sioc.resolve(DefaultScopeComponent.class);
+        DefaultScopeComponent instance1 = sico.resolve(DefaultScopeComponent.class);
+        DefaultScopeComponent instance2 = sico.resolve(DefaultScopeComponent.class);
         
         assertNotNull(instance1, "First instance should not be null");
         assertNotNull(instance2, "Second instance should not be null");

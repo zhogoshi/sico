@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.test;
+package dev.hogoshi.sico.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,13 +6,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import dev.hogoshi.sioc.annotation.Autowired;
-import dev.hogoshi.sioc.annotation.Component;
-import dev.hogoshi.sioc.annotation.PostConstruct;
-import dev.hogoshi.sioc.annotation.PreDestroy;
-import dev.hogoshi.sioc.annotation.Scheduled;
-import dev.hogoshi.sioc.annotation.Scope;
-import dev.hogoshi.sioc.annotation.Service;
+import dev.hogoshi.sico.annotation.Autowired;
+import dev.hogoshi.sico.annotation.Component;
+import dev.hogoshi.sico.annotation.PostConstruct;
+import dev.hogoshi.sico.annotation.PreDestroy;
+import dev.hogoshi.sico.annotation.Scheduled;
+import dev.hogoshi.sico.annotation.Scope;
+import dev.hogoshi.sico.annotation.Service;
 
 public class TestComponents {
     

@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.annotation;
+package dev.hogoshi.sico.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,4 +1,6 @@
-package dev.hogoshi.sioc.scheduler;
+package dev.hogoshi.sico.scheduler;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -65,12 +67,12 @@ public class SchedulerService implements Lifecycle {
         return running;
     }
 
-    public String scheduleTask(
-            Object instance, 
-            Method method, 
+    public @NotNull String scheduleTask(
+            @NotNull Object instance,
+            @NotNull Method method,
             long initialDelay, 
-            long interval, 
-            TimeUnit unit, 
+            long interval,
+            @NotNull TimeUnit unit,
             boolean fixedRate) {
         
         if (!running) {
@@ -105,7 +107,7 @@ public class SchedulerService implements Lifecycle {
         return taskId;
     }
 
-    public boolean cancelTask(String taskId) {
+    public boolean cancelTask(@NotNull String taskId) {
         ScheduledFuture<?> future = scheduledTasks.remove(taskId);
         if (future != null) {
             future.cancel(false);

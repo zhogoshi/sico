@@ -1,20 +1,22 @@
-package dev.hogoshi.sioc.container;
+package dev.hogoshi.sico.container;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Predicate;
 
 public interface Container {
 
-    <T> T resolve(Class<T> clazz);
+    <T> T resolve(@NotNull Class<T> clazz);
 
-    <T> T resolve(String name, Class<T> clazz);
+    <T> T resolve(@NotNull String name, @NotNull Class<T> clazz);
 
-    void register(Class<?> clazz);
+    void register(@NotNull Class<?> clazz);
 
-    void registerBeanDefinition(BeanDefinition beanDefinition);
+    void registerBeanDefinition(@NotNull BeanDefinition beanDefinition);
 
-    void registerBean(String name, Object instance);
+    void registerBean(@NotNull String name, @NotNull Object instance);
 
-    void scan(Predicate<String> filter, String... packageNames);
+    void scan(@NotNull Predicate<String> filter, @NotNull String... packageNames);
 
     void close();
 }

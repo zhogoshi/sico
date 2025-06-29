@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.scheduler;
+package dev.hogoshi.sico.scheduler;
 
 public interface Lifecycle {
 

@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.container;
+package dev.hogoshi.sico.container;
 
 import java.lang.reflect.Method;
 

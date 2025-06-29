@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import java.util.concurrent.TimeUnit;
 
@@ -9,19 +9,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestComponents.FixedDelayComponent;
-import dev.hogoshi.sioc.test.TestComponents.FixedRateComponent;
+import dev.hogoshi.sico.test.TestComponents.FixedDelayComponent;
+import dev.hogoshi.sico.test.TestComponents.FixedRateComponent;
 
 public class ScheduledTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
         
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -32,12 +32,12 @@ public class ScheduledTest {
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testFixedRateScheduling() throws InterruptedException {
-        FixedRateComponent component = sioc.resolve(FixedRateComponent.class);
+        FixedRateComponent component = sico.resolve(FixedRateComponent.class);
         assertNotNull(component, "Component should not be null");
         
         boolean executed = component.getLatch().await(5, TimeUnit.SECONDS);
@@ -49,7 +49,7 @@ public class ScheduledTest {
     
     @Test
     void testFixedDelayScheduling() throws InterruptedException {
-        FixedDelayComponent component = sioc.resolve(FixedDelayComponent.class);
+        FixedDelayComponent component = sico.resolve(FixedDelayComponent.class);
         assertNotNull(component, "Component should not be null");
         
         boolean executed = component.getLatch().await(5, TimeUnit.SECONDS);
@@ -61,12 +61,12 @@ public class ScheduledTest {
     
     @Test
     void testSchedulerStopsOnContainerStop() throws InterruptedException {
-        FixedRateComponent component = sioc.resolve(FixedRateComponent.class);
+        FixedRateComponent component = sico.resolve(FixedRateComponent.class);
         assertNotNull(component, "Component should not be null");
         
         Thread.sleep(1000);
         
-        sioc.stop();
+        sico.stop();
         
         int countAfterStop = component.getExecutionCount();
         

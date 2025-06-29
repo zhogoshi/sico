@@ -1,11 +1,12 @@
-package dev.hogoshi.sioc.handler.predefined;
+package dev.hogoshi.sico.handler.predefined;
 
-import dev.hogoshi.sioc.annotation.Bean;
-import dev.hogoshi.sioc.annotation.Configuration;
-import dev.hogoshi.sioc.annotation.Scope;
-import dev.hogoshi.sioc.container.BeanDefinition;
-import dev.hogoshi.sioc.container.Container;
-import dev.hogoshi.sioc.handler.AbstractComponentHandler;
+import dev.hogoshi.sico.annotation.Bean;
+import dev.hogoshi.sico.annotation.Configuration;
+import dev.hogoshi.sico.annotation.Scope;
+import dev.hogoshi.sico.container.BeanDefinition;
+import dev.hogoshi.sico.container.Container;
+import dev.hogoshi.sico.handler.AbstractComponentHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,7 +26,7 @@ public class ConfigurationHandler extends AbstractComponentHandler {
     }
 
     @Override
-    public void handle(Class<?> componentClass) {
+    public void handle(@NotNull Class<?> componentClass) {
         if (!componentClass.isAnnotationPresent(Configuration.class)) {
             return;
         }

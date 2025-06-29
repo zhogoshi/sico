@@ -1,0 +1,226 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build and Test
+        run: ./gradlew build test
+
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: sico/build/libs/
+
+      - name: Upload Kotlin artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-artifacts
+          path: sico-kotlin/build/libs/
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Download Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: sico/build/libs/
+
+      - name: Download Kotlin artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kotlin-artifacts
+          path: sico-kotlin/build/libs/
+
+      - name: Verify Tests
+        run: ./gradlew test
+        if: success()
+
+  release:
+    name: Release
+    needs: [build, test]
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Download Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: sico/build/libs/
+
+      - name: Download Kotlin artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kotlin-artifacts
+          path: sico-kotlin/build/libs/
+
+      - name: Make gradlew Executable
+        run: chmod +x ./gradlew
+
+      - name: Create JReleaser directories
+        run: |
+          mkdir -p sico/build/jreleaser
+          mkdir -p sico-kotlin/build/jreleaser
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          version=$(./gradlew properties -q | grep "^version: " | awk '{print $2}')
+          echo "PROJECT_VERSION=$version" >> $GITHUB_ENV
+
+      - name: Create Github Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.PROJECT_VERSION }}
+          release_name: Release v${{ env.PROJECT_VERSION }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Animation System Updates
+            
+            ### Non-code changes
+            - Added wiki page
+            - Removed docs from readme
+            - Removed gradle groovy implementation from readme
+
+            ### Core Module
+            - Simplified animation system by removing keyframes complexity
+            - Added support for direct value-to-value sico
+            - Implemented smooth interpolation between values
+            - Added support for custom easing functions between keyframes
+            - Enhanced elastic sico with proper easing functions
+
+            ### Kotlin DSL Module
+            - Added support for keyframe-based sico with custom easing
+            - Implemented DSL for creating complex sico
+            - Added support for elastic sico with ELASTIC_BOTH easing
+            - Enhanced animation builder with from/to value support
+            - Improved animation smoothness and natural movement
+
+      - name: Upload Core JAR to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico/build/libs/sico-${{ env.PROJECT_VERSION }}.jar
+          asset_name: sico-${{ env.PROJECT_VERSION }}.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Kotlin DSL JAR to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}.jar
+          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Core javadocs to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico/build/libs/sico-${{ env.PROJECT_VERSION }}-javadoc.jar
+          asset_name: sico-${{ env.PROJECT_VERSION }}-javadoc.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Kotlin DSL javadocs to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}-javadoc.jar
+          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}-javadoc.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Core sources to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico/build/libs/sico-${{ env.PROJECT_VERSION }}-sources.jar
+          asset_name: sico-${{ env.PROJECT_VERSION }}-sources.jar
+          asset_content_type: application/java-archive
+
+      - name: Upload Kotlin DSL sources to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: sico-kotlin/build/libs/sico-kotlin-${{ env.PROJECT_VERSION }}-sources.jar
+          asset_name: sico-kotlin-${{ env.PROJECT_VERSION }}-sources.jar
+          asset_content_type: application/java-archive
+
+      - name: Publish to Maven Central
+        uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1
+        with:
+          arguments: --no-daemon -i sico:jreleaserConfig sico:build sico:test sico:publish sico-kotlin:jreleaserConfig sico-kotlin:build sico-kotlin:test sico-kotlin:publish
+        if: success()
+        env:
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME }}
+          JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_TOKEN }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+
+      - name: Complete Release
+        uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1
+        with:
+          arguments: --no-daemon -i sico:jreleaserFullRelease sico-kotlin:jreleaserFullRelease
+        if: success()
+        env:
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME }}
+          JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_TOKEN }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}

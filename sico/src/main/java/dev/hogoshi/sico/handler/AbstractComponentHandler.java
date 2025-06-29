@@ -1,4 +1,6 @@
-package dev.hogoshi.sioc.handler;
+package dev.hogoshi.sico.handler;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -23,7 +25,7 @@ public abstract class AbstractComponentHandler implements ComponentRegisterHandl
     }
 
     @Override
-    public boolean supports(Class<?> componentClass) {
+    public boolean supports(@NotNull Class<?> componentClass) {
         if (supportedAnnotations.isEmpty()) {
             return true;
         }
@@ -43,7 +45,7 @@ public abstract class AbstractComponentHandler implements ComponentRegisterHandl
     }
     
     @Override
-    public Phase getPhase() {
+    public @NotNull Phase getPhase() {
         return phase;
     }
 } 

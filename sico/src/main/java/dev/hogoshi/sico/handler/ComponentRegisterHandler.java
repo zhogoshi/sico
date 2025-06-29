@@ -1,4 +1,6 @@
-package dev.hogoshi.sioc.handler;
+package dev.hogoshi.sico.handler;
+
+import org.jetbrains.annotations.NotNull;
 
 public interface ComponentRegisterHandler extends Comparable<ComponentRegisterHandler> {
 
@@ -7,20 +9,20 @@ public interface ComponentRegisterHandler extends Comparable<ComponentRegisterHa
         POST_PROCESSING
     }
 
-    void handle(Class<?> componentClass);
+    void handle(@NotNull Class<?> componentClass);
 
-    boolean supports(Class<?> componentClass);
+    boolean supports(@NotNull Class<?> componentClass);
 
     default int getPriority() {
         return 100;
     }
 
-    default Phase getPhase() {
+    default @NotNull Phase getPhase() {
         return Phase.REGISTRATION;
     }
 
     @Override
-    default int compareTo(ComponentRegisterHandler other) {
+    default int compareTo(@NotNull ComponentRegisterHandler other) {
         return Integer.compare(this.getPriority(), other.getPriority());
     }
 } 

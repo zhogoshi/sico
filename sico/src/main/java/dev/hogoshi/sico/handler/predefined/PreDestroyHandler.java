@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.handler.predefined;
+package dev.hogoshi.sico.handler.predefined;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,14 +7,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import dev.hogoshi.sioc.annotation.Component;
-import dev.hogoshi.sioc.annotation.Configuration;
-import dev.hogoshi.sioc.annotation.PreDestroy;
-import dev.hogoshi.sioc.annotation.Repository;
-import dev.hogoshi.sioc.annotation.Service;
-import dev.hogoshi.sioc.container.Container;
-import dev.hogoshi.sioc.handler.AbstractComponentHandler;
-import dev.hogoshi.sioc.handler.ComponentRegisterHandler.Phase;
+import dev.hogoshi.sico.annotation.Component;
+import dev.hogoshi.sico.annotation.Configuration;
+import dev.hogoshi.sico.annotation.PreDestroy;
+import dev.hogoshi.sico.annotation.Repository;
+import dev.hogoshi.sico.annotation.Service;
+import dev.hogoshi.sico.container.Container;
+import dev.hogoshi.sico.handler.AbstractComponentHandler;
+import org.jetbrains.annotations.NotNull;
 
 public class PreDestroyHandler extends AbstractComponentHandler {
     private final Container container;
@@ -27,7 +27,7 @@ public class PreDestroyHandler extends AbstractComponentHandler {
     }
 
     @Override
-    public void handle(Class<?> componentClass) {
+    public void handle(@NotNull Class<?> componentClass) {
         if (processedClasses.contains(componentClass)) {
             return;
         }

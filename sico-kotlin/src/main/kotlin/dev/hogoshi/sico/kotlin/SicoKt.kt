@@ -1,35 +1,36 @@
-package dev.hogoshi.sioc
+package dev.hogoshi.sico.kotlin
 
-import dev.hogoshi.sioc.container.Container
-import dev.hogoshi.sioc.handler.AbstractComponentHandler
-import dev.hogoshi.sioc.handler.ComponentRegisterHandler
+import dev.hogoshi.sico.Sico
+import dev.hogoshi.sico.container.Container
+import dev.hogoshi.sico.handler.AbstractComponentHandler
+import dev.hogoshi.sico.handler.ComponentRegisterHandler
 import kotlin.reflect.KClass
 
-class SIoCKt private constructor(private val sioc: Sico) {
+class SicoKt private constructor(private val sico: Sico) {
     fun start() {
-        sioc.start()
+        sico.start()
     }
 
     fun stop() {
-        sioc.stop()
+        sico.stop()
     }
 
-    fun isRunning(): Boolean = sioc.isRunning
+    fun isRunning(): Boolean = sico.isRunning
 
     fun close() {
-        sioc.close()
+        sico.close()
     }
 
     fun scan(vararg packageNames: String) {
-        sioc.scan(*packageNames)
+        sico.scan(*packageNames)
     }
 
     fun scan(filter: (String) -> Boolean, vararg packageNames: String) {
-        sioc.scan({ s -> filter(s) }, *packageNames)
+        sico.scan({ s -> filter(s) }, *packageNames)
     }
 
     fun register(clazz: KClass<*>) {
-        sioc.register(clazz.java)
+        sico.register(clazz.java)
     }
 
     inline fun <reified T : Any> register() {
@@ -37,7 +38,7 @@ class SIoCKt private constructor(private val sioc: Sico) {
     }
 
     fun <T : Any> resolve(clazz: KClass<T>): T? {
-        return sioc.resolve(clazz.java)
+        return sico.resolve(clazz.java)
     }
 
     inline fun <reified T : Any> resolve(): T? {
@@ -45,7 +46,7 @@ class SIoCKt private constructor(private val sioc: Sico) {
     }
 
     fun <T : Any> resolve(name: String, clazz: KClass<T>): T? {
-        return sioc.resolve(name, clazz.java)
+        return sico.resolve(name, clazz.java)
     }
 
     inline fun <reified T : Any> resolve(name: String): T? {
@@ -53,7 +54,7 @@ class SIoCKt private constructor(private val sioc: Sico) {
     }
 
     fun addHandler(handler: ComponentRegisterHandler) {
-        sioc.addHandler(handler)
+        sico.addHandler(handler)
     }
 
     fun addHandler(
@@ -69,41 +70,41 @@ class SIoCKt private constructor(private val sioc: Sico) {
                 handler(componentClass)
             }
         }
-        sioc.addHandler(wrapperHandler)
+        sico.addHandler(wrapperHandler)
     }
 
     fun removeHandler(handler: ComponentRegisterHandler) {
-        sioc.removeHandler(handler)
+        sico.removeHandler(handler)
     }
     
     fun addContainer(name: String, container: Container) {
-        sioc.addContainer(name, container)
+        sico.addContainer(name, container)
     }
 
     companion object {
         @JvmStatic
-        fun create(): SIoCKt = SIoCKt(Sico())
+        fun create(): SicoKt = SicoKt(Sico.getInstance())
 
         @JvmStatic
-        fun getInstance(): SIoCKt = SIoCKt(Sico.getInstance())
+        fun getInstance(): SicoKt = SicoKt(Sico.getInstance())
     }
 }
 
-fun ioc(init: SIoCKt.() -> Unit): SIoCKt {
-    val sioc = SIoCKt.create()
-    sioc.start()
-    sioc.init()
-    return sioc
+fun ioc(init: SicoKt.() -> Unit): SicoKt {
+    val sico = SicoKt.create()
+    sico.start()
+    sico.init()
+    return sico
 }
 
-inline fun <reified T : Any> SIoCKt.register() {
+inline fun <reified T : Any> SicoKt.register() {
     register(T::class)
 }
 
-inline fun <reified T : Any> SIoCKt.get(): T? = resolve(T::class)
+inline fun <reified T : Any> SicoKt.get(): T? = resolve(T::class)
 
-inline fun <reified T : Any> SIoCKt.get(name: String): T? = resolve(name, T::class)
+inline fun <reified T : Any> SicoKt.get(name: String): T? = resolve(name, T::class)
 
-fun SIoCKt.register(clazz: Class<*>) {
+fun SicoKt.register(clazz: Class<*>) {
     register(clazz.kotlin)
 }

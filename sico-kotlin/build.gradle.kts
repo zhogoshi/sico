@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":sioc"))
+    implementation(project(":sico"))
 }
 
 tasks.withType<KotlinCompile> {
@@ -14,6 +14,6 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.jar {
-    from(project(":sioc").sourceSets.main.get().output)
+    from(project(":sico").sourceSets.main.get().output)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

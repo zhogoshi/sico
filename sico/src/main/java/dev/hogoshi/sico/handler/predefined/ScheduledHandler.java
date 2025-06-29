@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc.handler.predefined;
+package dev.hogoshi.sico.handler.predefined;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import dev.hogoshi.sioc.annotation.Component;
-import dev.hogoshi.sioc.annotation.Configuration;
-import dev.hogoshi.sioc.annotation.Repository;
-import dev.hogoshi.sioc.annotation.Scheduled;
-import dev.hogoshi.sioc.annotation.Service;
-import dev.hogoshi.sioc.container.Container;
-import dev.hogoshi.sioc.handler.AbstractComponentHandler;
-import dev.hogoshi.sioc.handler.ComponentRegisterHandler.Phase;
-import dev.hogoshi.sioc.scheduler.SchedulerService;
+import dev.hogoshi.sico.annotation.Component;
+import dev.hogoshi.sico.annotation.Configuration;
+import dev.hogoshi.sico.annotation.Repository;
+import dev.hogoshi.sico.annotation.Scheduled;
+import dev.hogoshi.sico.annotation.Service;
+import dev.hogoshi.sico.container.Container;
+import dev.hogoshi.sico.handler.AbstractComponentHandler;
+import dev.hogoshi.sico.scheduler.SchedulerService;
+import org.jetbrains.annotations.NotNull;
 
 public class ScheduledHandler extends AbstractComponentHandler {
     private final Container container;
@@ -29,7 +29,7 @@ public class ScheduledHandler extends AbstractComponentHandler {
     }
 
     @Override
-    public void handle(Class<?> componentClass) {
+    public void handle(@NotNull Class<?> componentClass) {
         try {
             Object instance = container.resolve(componentClass);
             if (instance == null) {

@@ -1,10 +1,10 @@
-package dev.hogoshi.sioc.test;
+package dev.hogoshi.sico.test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import dev.hogoshi.sioc.annotation.Bean;
-import dev.hogoshi.sioc.annotation.Configuration;
-import dev.hogoshi.sioc.annotation.Scope;
+import dev.hogoshi.sico.annotation.Bean;
+import dev.hogoshi.sico.annotation.Configuration;
+import dev.hogoshi.sico.annotation.Scope;
 
 @Configuration
 public class TestConfig {

@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,19 +9,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestConfig.ComplexBean;
-import dev.hogoshi.sioc.test.TestConfig.SimpleBean;
+import dev.hogoshi.sico.test.TestConfig.ComplexBean;
+import dev.hogoshi.sico.test.TestConfig.SimpleBean;
 
 public class ConfigurationTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
         
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -32,13 +32,13 @@ public class ConfigurationTest {
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testSingletonBean() {
-        SimpleBean bean1 = sioc.resolve("simpleBean", SimpleBean.class);
-        SimpleBean bean2 = sioc.resolve("simpleBean", SimpleBean.class);
+        SimpleBean bean1 = sico.resolve("simpleBean", SimpleBean.class);
+        SimpleBean bean2 = sico.resolve("simpleBean", SimpleBean.class);
         
         assertNotNull(bean1, "Bean should not be null");
         assertNotNull(bean2, "Bean should not be null");
@@ -50,8 +50,8 @@ public class ConfigurationTest {
     
     @Test
     void testPrototypeBean() {
-        SimpleBean bean1 = sioc.resolve("prototypeBean", SimpleBean.class);
-        SimpleBean bean2 = sioc.resolve("prototypeBean", SimpleBean.class);
+        SimpleBean bean1 = sico.resolve("prototypeBean", SimpleBean.class);
+        SimpleBean bean2 = sico.resolve("prototypeBean", SimpleBean.class);
         
         assertNotNull(bean1, "Bean should not be null");
         assertNotNull(bean2, "Bean should not be null");
@@ -62,7 +62,7 @@ public class ConfigurationTest {
     
     @Test
     void testNamedBean() {
-        SimpleBean bean = sioc.resolve("customNamedBean", SimpleBean.class);
+        SimpleBean bean = sico.resolve("customNamedBean", SimpleBean.class);
         
         assertNotNull(bean, "Bean should not be null");
         assertEquals("named-", bean.getName().substring(0, 6));
@@ -70,8 +70,8 @@ public class ConfigurationTest {
     
     @Test
     void testDependencyInjection() {
-        ComplexBean complexBean = sioc.resolve("complexBean", ComplexBean.class);
-        SimpleBean simpleBean = sioc.resolve("simpleBean", SimpleBean.class);
+        ComplexBean complexBean = sico.resolve("complexBean", ComplexBean.class);
+        SimpleBean simpleBean = sico.resolve("simpleBean", SimpleBean.class);
         
         assertNotNull(complexBean, "Complex bean should not be null");
         assertNotNull(complexBean.getSimpleBean(), "Injected bean should not be null");

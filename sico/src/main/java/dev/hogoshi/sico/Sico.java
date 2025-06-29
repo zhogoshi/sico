@@ -1,21 +1,22 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import dev.hogoshi.sioc.container.Container;
-import dev.hogoshi.sioc.container.DefaultContainer;
-import dev.hogoshi.sioc.handler.ComponentRegisterHandler;
-import dev.hogoshi.sioc.scheduler.Lifecycle;
+import dev.hogoshi.sico.container.Container;
+import dev.hogoshi.sico.container.DefaultContainer;
+import dev.hogoshi.sico.handler.ComponentRegisterHandler;
+import dev.hogoshi.sico.scheduler.Lifecycle;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 public class Sico implements Lifecycle {
 
     @Getter
     private static final Sico instance = new Sico();
 
-    @Getter
+    @Getter @NotNull
     private final Container container;
 
     private final Map<String, Container> containers = new HashMap<>();
@@ -46,15 +47,15 @@ public class Sico implements Lifecycle {
         return false;
     }
 
-    public void scan(String... packageNames) {
+    public void scan(@NotNull String... packageNames) {
         container.scan(s -> true, packageNames);
     }
 
-    public void scan(Predicate<String> filter, String... packageNames) {
+    public void scan(@NotNull Predicate<String> filter, @NotNull String... packageNames) {
         container.scan(filter, packageNames);
     }
 
-    public void addContainer(String name, Container container) {
+    public void addContainer(@NotNull String name, @NotNull Container container) {
         containers.put(name, container);
 
         if (container instanceof Lifecycle && isRunning()) {
@@ -62,25 +63,25 @@ public class Sico implements Lifecycle {
         }
     }
 
-    public Container getContainer(String name) {
+    public Container getContainer(@NotNull String name) {
         return containers.get(name);
     }
     
-    public <T> T resolve(Class<T> clazz) {
+    public <T> T resolve(@NotNull Class<T> clazz) {
         return container.resolve(clazz);
     }
 
-    public void register(Class<?> clazz) {
+    public void register(@NotNull Class<?> clazz) {
         container.register(clazz);
     }
 
-    public void addHandler(ComponentRegisterHandler handler) {
+    public void addHandler(@NotNull ComponentRegisterHandler handler) {
         if (container instanceof DefaultContainer) {
             ((DefaultContainer) container).addHandler(handler);
         }
     }
 
-    public void removeHandler(ComponentRegisterHandler handler) {
+    public void removeHandler(@NotNull ComponentRegisterHandler handler) {
         if (container instanceof DefaultContainer) {
             ((DefaultContainer) container).removeHandler(handler);
         }
@@ -90,7 +91,7 @@ public class Sico implements Lifecycle {
         container.close();
     }
 
-    public <T> T resolve(String name, Class<T> clazz) {
+    public <T> T resolve(@NotNull String name, @NotNull Class<T> clazz) {
         return container.resolve(name, clazz);
     }
 }

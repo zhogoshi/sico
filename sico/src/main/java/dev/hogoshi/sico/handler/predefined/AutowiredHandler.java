@@ -1,12 +1,13 @@
-package dev.hogoshi.sioc.handler.predefined;
+package dev.hogoshi.sico.handler.predefined;
 
-import dev.hogoshi.sioc.annotation.Autowired;
-import dev.hogoshi.sioc.annotation.Component;
-import dev.hogoshi.sioc.annotation.Configuration;
-import dev.hogoshi.sioc.annotation.Repository;
-import dev.hogoshi.sioc.annotation.Service;
-import dev.hogoshi.sioc.container.Container;
-import dev.hogoshi.sioc.handler.AbstractComponentHandler;
+import dev.hogoshi.sico.annotation.Autowired;
+import dev.hogoshi.sico.annotation.Component;
+import dev.hogoshi.sico.annotation.Configuration;
+import dev.hogoshi.sico.annotation.Repository;
+import dev.hogoshi.sico.annotation.Service;
+import dev.hogoshi.sico.container.Container;
+import dev.hogoshi.sico.handler.AbstractComponentHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 
@@ -19,7 +20,7 @@ public class AutowiredHandler extends AbstractComponentHandler {
     }
 
     @Override
-    public void handle(Class<?> componentClass) {
+    public void handle(@NotNull Class<?> componentClass) {
         try {
             Object instance = container.resolve(componentClass);
             if (instance == null) {

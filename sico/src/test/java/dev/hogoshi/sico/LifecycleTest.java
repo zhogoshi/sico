@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import java.util.List;
 
@@ -10,19 +10,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestComponents.LifecycleComponent;
-import dev.hogoshi.sioc.test.TestComponents.OrderedLifecycleComponent;
+import dev.hogoshi.sico.test.TestComponents.LifecycleComponent;
+import dev.hogoshi.sico.test.TestComponents.OrderedLifecycleComponent;
 
 public class LifecycleTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
         
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -33,37 +33,37 @@ public class LifecycleTest {
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testPostConstructCalled() {
-        LifecycleComponent component = sioc.resolve(LifecycleComponent.class);
+        LifecycleComponent component = sico.resolve(LifecycleComponent.class);
         assertNotNull(component, "Component should not be null");
         assertTrue(component.isInitialized(), "PostConstruct method should be called");
     }
     
     @Test
     void testPreDestroyCalled() {
-        LifecycleComponent component = sioc.resolve(LifecycleComponent.class);
+        LifecycleComponent component = sico.resolve(LifecycleComponent.class);
         assertNotNull(component, "Component should not be null");
         assertFalse(component.isDestroyed(), "PreDestroy method should not be called yet");
         
-        sioc.close();
+        sico.close();
         
         assertTrue(component.isDestroyed(), "PreDestroy method should be called after container close");
     }
     
     @Test
     void testLifecycleOrder() {
-        OrderedLifecycleComponent component = sioc.resolve(OrderedLifecycleComponent.class);
+        OrderedLifecycleComponent component = sico.resolve(OrderedLifecycleComponent.class);
         assertNotNull(component, "Component should not be null");
         
         List<String> events = component.getEvents();
         assertEquals(1, events.size(), "Only PostConstruct should be called");
         assertEquals("init", events.get(0), "First event should be init");
         
-        sioc.close();
+        sico.close();
         
         events = component.getEvents();
         assertEquals(2, events.size(), "Both PostConstruct and PreDestroy should be called");

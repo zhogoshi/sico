@@ -1,4 +1,4 @@
-package dev.hogoshi.sioc;
+package dev.hogoshi.sico;
 
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -7,18 +7,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import dev.hogoshi.sioc.test.TestComponents.TestComponent;
+import dev.hogoshi.sico.test.TestComponents.TestComponent;
 
 public class AutowiredTest {
     
-    private Sico sioc;
+    private Sico sico;
     
     @BeforeEach
     void setUp() {
-        sioc = new Sico();
-        sioc.start();
+        sico = new Sico();
+        sico.start();
         
-        sioc.scan("dev.hogoshi.sioc.test");
+        sico.scan("dev.hogoshi.sico.test");
         
         try {
             Thread.sleep(500);
@@ -29,12 +29,12 @@ public class AutowiredTest {
     
     @AfterEach
     void tearDown() {
-        sioc.close();
+        sico.close();
     }
     
     @Test
     void testFieldInjection() {
-        TestComponent component = sioc.resolve(TestComponent.class);
+        TestComponent component = sico.resolve(TestComponent.class);
         assertNotNull(component, "Component should not be null");
         assertNotNull(component.getService(), "Autowired service should not be null");
         assertEquals("Hello from TestService", component.getService().sayHello());
@@ -42,8 +42,8 @@ public class AutowiredTest {
     
     @Test
     void testConstructorInjection() {
-        dev.hogoshi.sioc.test.TestComponents.ConstructorInjectedComponent component = 
-            sioc.resolve(dev.hogoshi.sioc.test.TestComponents.ConstructorInjectedComponent.class);
+        dev.hogoshi.sico.test.TestComponents.ConstructorInjectedComponent component =
+            sico.resolve(dev.hogoshi.sico.test.TestComponents.ConstructorInjectedComponent.class);
         assertNotNull(component, "Component should not be null");
         assertNotNull(component.getService(), "Injected service should not be null");
         assertEquals("Hello from TestService", component.getService().sayHello());
