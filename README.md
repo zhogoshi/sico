@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.hogoshi.sico:sico:XXX")
+    implementation("dev.hogoshi.sico:sico:X.X.X")
 }
 ```
 
@@ -36,12 +36,12 @@ dependencies {
     <dependency>
         <groupId>dev.hogoshi.sico</groupId>
         <artifactId>sico</artifactId>
-        <version>XXX</version>
+        <version>X.X.X</version>
     </dependency>
 </dependencies>
 ```
 
-> Note: Replace `XXX` with the desired version tag from the [releases page](https://github.com/zhogoshi/sico/releases).
+> Note: Replace `X.X.X` with the desired version tag from the [releases page](https://github.com/zhogoshi/sico/releases).
 
 ## Usage
 
