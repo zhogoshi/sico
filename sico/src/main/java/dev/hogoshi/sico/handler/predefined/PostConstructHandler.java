@@ -1,6 +1,7 @@
 package dev.hogoshi.sico.handler.predefined;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,13 +48,13 @@ public class PostConstructHandler extends AbstractComponentHandler {
     
     private void invokePostConstructMethod(Method method, Object instance) {
         try {
-            method.setAccessible(true);
             if (method.getParameterCount() == 0) {
-                method.invoke(instance);
+                MethodHandle methodHandle = MethodHandles.lookup().unreflect(method).bindTo(instance);
+                methodHandle.invoke();
             } else {
                 throw new IllegalStateException("@PostConstruct method should have no parameters: " + method.getName() + " in " + instance.getClass().getName());
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (Throwable e) {
             throw new IllegalStateException("Failed to invoke @PostConstruct method " + method.getName(), e);
         }
     }

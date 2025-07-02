@@ -8,7 +8,8 @@ import dev.hogoshi.sico.container.Container;
 import dev.hogoshi.sico.handler.AbstractComponentHandler;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -88,12 +89,12 @@ public class ConfigurationHandler extends AbstractComponentHandler {
     private Object createAndRegisterBean(BeanDefinition beanDefinition) {
         try {
             Method factoryMethod = beanDefinition.getFactoryMethod();
-            factoryMethod.setAccessible(true);
+            MethodHandle methodHandle = MethodHandles.lookup().unreflect(factoryMethod).bindTo(beanDefinition.getDeclaringInstance());
             
             Object[] args = resolveDependencies(factoryMethod);
             
-            return factoryMethod.invoke(beanDefinition.getDeclaringInstance(), args);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+            return methodHandle.invokeWithArguments(args);
+        } catch (Throwable e) {
             throw new RuntimeException("Error creating bean from factory method: " + beanDefinition.getName(), e);
         }
     }

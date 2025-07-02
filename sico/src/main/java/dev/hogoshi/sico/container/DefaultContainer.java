@@ -3,6 +3,9 @@ package dev.hogoshi.sico.container;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -154,16 +157,21 @@ public class DefaultContainer implements Container, Lifecycle {
             throw new IllegalStateException("Container is closed");
         }
         
-        Object component = components.get(clazz);
-        if (component != null) {
-            Scope.Scopes scope = determineComponentScope(clazz);
-            if (scope.equals(Scope.Scopes.PROTOTYPE)) {
+        Scope.Scopes scope = determineComponentScope(clazz);
+        if (scope.equals(Scope.Scopes.PROTOTYPE)) {
+            if (isComponent(clazz) && !processingClasses.contains(clazz)) {
                 try {
                     return clazz.cast(createNewInstance(clazz));
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     throw new RuntimeException("Error creating prototype instance for class: " + clazz.getName(), e);
                 }
             }
+            return null;
+        }
+        
+        
+        Object component = components.get(clazz);
+        if (component != null) {
             return clazz.cast(component);
         }
         
@@ -263,14 +271,14 @@ public class DefaultContainer implements Container, Lifecycle {
                 throw new IllegalStateException("No suitable constructor found for class: " + clazz.getName());
             }
             
-            constructor.setAccessible(true);
+            MethodHandle constructorHandle = MethodHandles.lookup().unreflectConstructor(constructor);
             
             Object instance;
             if (constructor.getParameterCount() > 0) {
                 Object[] args = resolveConstructorParameters(constructor);
-                instance = constructor.newInstance(args);
+                instance = constructorHandle.invokeWithArguments(args);
             } else {
-                instance = constructor.newInstance();
+                instance = constructorHandle.invoke();
             }
             
             String name = determineComponentName(clazz);
@@ -281,12 +289,14 @@ public class DefaultContainer implements Container, Lifecycle {
             registerBeanDefinition(definition);
             
             registerBean(name, instance);
-            components.put(clazz, instance);
+            if (scope.equals(Scope.Scopes.SINGLETON)) {
+                components.put(clazz, instance);
+            }
             registeredClasses.add(clazz);
             
             processHandlersForPhase(clazz, Phase.REGISTRATION);
             
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new RuntimeException("Error registering class: " + clazz.getName(), e);
         } finally {
             processingClasses.remove(clazz);
@@ -364,12 +374,12 @@ public class DefaultContainer implements Container, Lifecycle {
                 if (factoryMethod == null) {
                     return null;
                 }
-                factoryMethod.setAccessible(true);
-                
                 Object factoryInstance = definition.getDeclaringInstance();
                 if (factoryInstance == null) {
                     return null;
                 }
+                
+                MethodHandle methodHandle = MethodHandles.lookup().unreflect(factoryMethod).bindTo(factoryInstance);
                 
                 Parameter[] parameters = factoryMethod.getParameters();
                 Object[] args = new Object[parameters.length];
@@ -384,23 +394,23 @@ public class DefaultContainer implements Container, Lifecycle {
                     }
                 }
                 
-                return factoryMethod.invoke(factoryInstance, args);
+                return methodHandle.invokeWithArguments(args);
             } else {
                 Constructor<?> constructor = findSuitableConstructor(definition.getBeanClass());
                 if (constructor == null) {
                     return null;
                 }
                 
-                constructor.setAccessible(true);
+                MethodHandle constructorHandle = MethodHandles.lookup().unreflectConstructor(constructor);
                 
                 if (constructor.getParameterCount() > 0) {
                     Object[] args = resolveConstructorParameters(constructor);
-                    return constructor.newInstance(args);
+                    return constructorHandle.invokeWithArguments(args);
                 } else {
-                    return constructor.newInstance();
+                    return constructorHandle.invoke();
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new BeanCreationException("Error creating bean: " + definition.getName(), e);
         }
     }
@@ -442,7 +452,21 @@ public class DefaultContainer implements Container, Lifecycle {
         }
         
         String simpleName = clazz.getSimpleName();
-        return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+        String baseName = Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+        
+        if (namedComponents.containsKey(baseName) || beanDefinitions.containsKey(baseName)) {
+            String packageName = clazz.getPackage() != null ? clazz.getPackage().getName() : "";
+            String[] packageParts = packageName.split("\\.");
+            String qualifiedName = packageParts.length > 0 ? 
+                packageParts[packageParts.length - 1] + "." + baseName : baseName;
+            
+            if (namedComponents.containsKey(qualifiedName) || beanDefinitions.containsKey(qualifiedName)) {
+                return clazz.getName().replace(".", "_").replace("$", "_");
+            }
+            return qualifiedName;
+        }
+        
+        return baseName;
     }
     
     /**
@@ -693,20 +717,20 @@ public class DefaultContainer implements Container, Lifecycle {
      * @throws Exception if an error occurs
      */
     @Nullable
-    private Object createNewInstance(@NotNull Class<?> clazz) throws Exception {
+    private Object createNewInstance(@NotNull Class<?> clazz) throws Throwable {
         Constructor<?> constructor = findSuitableConstructor(clazz);
         if (constructor == null) {
             throw new IllegalStateException("No suitable constructor found for class: " + clazz.getName());
         }
         
-        constructor.setAccessible(true);
+        MethodHandle constructorHandle = MethodHandles.lookup().unreflectConstructor(constructor);
         
         Object instance;
         if (constructor.getParameterCount() > 0) {
             Object[] args = resolveConstructorParameters(constructor);
-            instance = constructor.newInstance(args);
+            instance = constructorHandle.invokeWithArguments(args);
         } else {
-            instance = constructor.newInstance();
+            instance = constructorHandle.invoke();
         }
         
         for (ComponentRegisterHandler handler : handlers) {

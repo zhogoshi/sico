@@ -10,6 +10,9 @@ import dev.hogoshi.sico.handler.AbstractComponentHandler;
 import dev.hogoshi.sico.handler.ComponentRegisterHandler.Phase;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 
 public class AutowiredHandler extends AbstractComponentHandler {
@@ -26,18 +29,24 @@ public class AutowiredHandler extends AbstractComponentHandler {
                 return;
             }
 
+            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(componentClass, MethodHandles.lookup());
+            
             for (Field field : componentClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(Autowired.class)) {
-                    field.setAccessible(true);
-                    
-                    if (field.get(instance) != null) {
-                        continue;
-                    }
-                    
-                    Object dependency = getContainer().resolve(field.getType());
-                    
-                    if (dependency != null) {
-                        field.set(instance, dependency);
+                    try {
+                        VarHandle varHandle = lookup.unreflectVarHandle(field);
+                        
+                        if (varHandle.get(instance) != null) {
+                            continue;
+                        }
+                        
+                        Object dependency = getContainer().resolve(field.getType());
+                        
+                        if (dependency != null) {
+                            varHandle.set(instance, dependency);
+                        }
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException("Failed to access field: " + field.getName(), e);
                     }
                 }
             }
