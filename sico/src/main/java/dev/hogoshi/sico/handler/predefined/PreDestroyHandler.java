@@ -1,6 +1,7 @@
 package dev.hogoshi.sico.handler.predefined;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +35,6 @@ public class PreDestroyHandler extends AbstractComponentHandler {
             Set<Method> methods = new HashSet<>();
             for (Method method : componentClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(PreDestroy.class)) {
-                    method.setAccessible(true);
                     methods.add(method);
                 }
             }
@@ -74,11 +74,12 @@ public class PreDestroyHandler extends AbstractComponentHandler {
     private void invokePreDestroyMethod(Method method, Object instance) {
         try {
             if (method.getParameterCount() == 0) {
-                method.invoke(instance);
+                MethodHandle methodHandle = MethodHandles.lookup().unreflect(method).bindTo(instance);
+                methodHandle.invoke();
             } else {
                 throw new IllegalStateException("@PreDestroy method should have no parameters: " + method.getName() + " in " + instance.getClass().getName());
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (Throwable e) {
             throw new IllegalStateException("Failed to invoke @PreDestroy method " + method.getName(), e);
         }
     }

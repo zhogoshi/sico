@@ -99,21 +99,19 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            ## Minor changes
+            ## Performance and Reliability Improvements
             
-            ### Non-code changes
-            - Added wiki page
-            - Added documentation
-
-            ### Core Module
-            - Scope types moved to Enum
-            - Others ClassLoader support
-            - Optimizations
-            - Lombok usage
-            - Jetbrains Annotations
-
-            ### Kotlin DSL Module
-            - Removal
+            ### Core Module Changes
+            - **Performance**: Replaced Java Reflection API with MethodHandles for better performance
+            - **Thread Safety**: Fixed thread safety issue in SchedulerService
+            - **Bug Fixes**: Fixed inconsistent prototype scope handling
+            - **Reliability**: Improved component name collision handling
+            
+            ### Technical Improvements
+            - MethodHandles implementation for @Scheduled, @Autowired, and constructor injection
+            - Enhanced concurrent access patterns
+            - Better memory management for prototype beans
+            - Improved error handling and exception messages
 
       - name: Upload Core JAR to Release
         uses: actions/upload-release-asset@v1

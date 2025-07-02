@@ -2,6 +2,9 @@ package dev.hogoshi.sico.scheduler;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,7 +12,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 /**
  * Service that manages scheduled tasks.
@@ -118,15 +120,22 @@ public class SchedulerService implements Lifecycle {
         
         String taskId = instance.getClass().getName() + "." + method.getName() + "-" + System.nanoTime();
         
+        MethodHandle methodHandle;
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            methodHandle = lookup.unreflect(method).bindTo(instance);
+        } catch (IllegalAccessException e) {
+            throw new SchedulerException("Failed to create method handle for: " + method.getName(), e);
+        }
+        
         Runnable task = () -> {
             try {
                 if (contextClassLoader != null) {
                     Thread.currentThread().setContextClassLoader(contextClassLoader);
                 }
                 
-                method.setAccessible(true);
-                method.invoke(instance);
-            } catch (Exception e) {
+                methodHandle.invoke();
+            } catch (Throwable e) {
                 throw new SchedulerException("Error executing scheduled task: " + method.getName(), e);
             }
         };
