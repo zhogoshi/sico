@@ -3,8 +3,8 @@ package dev.hogoshi.sico.scheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -18,7 +18,7 @@ import java.util.logging.Level;
  */
 public class SchedulerService implements Lifecycle {
     private ScheduledExecutorService executor;
-    private final Map<String, ScheduledFuture<?>> scheduledTasks = new HashMap<>();
+    private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
     private volatile boolean running = false;
     private final int poolSize;
     private ClassLoader contextClassLoader;

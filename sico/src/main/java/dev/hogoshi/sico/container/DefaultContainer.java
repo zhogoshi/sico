@@ -154,16 +154,23 @@ public class DefaultContainer implements Container, Lifecycle {
             throw new IllegalStateException("Container is closed");
         }
         
-        Object component = components.get(clazz);
-        if (component != null) {
-            Scope.Scopes scope = determineComponentScope(clazz);
-            if (scope.equals(Scope.Scopes.PROTOTYPE)) {
+        // Check if this is a prototype-scoped component
+        Scope.Scopes scope = determineComponentScope(clazz);
+        if (scope.equals(Scope.Scopes.PROTOTYPE)) {
+            // Always create new instances for prototype scope
+            if (isComponent(clazz) && !processingClasses.contains(clazz)) {
                 try {
                     return clazz.cast(createNewInstance(clazz));
                 } catch (Exception e) {
                     throw new RuntimeException("Error creating prototype instance for class: " + clazz.getName(), e);
                 }
             }
+            return null;
+        }
+        
+        // For singleton scope, check the components map
+        Object component = components.get(clazz);
+        if (component != null) {
             return clazz.cast(component);
         }
         
@@ -281,7 +288,10 @@ public class DefaultContainer implements Container, Lifecycle {
             registerBeanDefinition(definition);
             
             registerBean(name, instance);
-            components.put(clazz, instance);
+            // Only store singleton-scoped beans in the components map
+            if (scope.equals(Scope.Scopes.SINGLETON)) {
+                components.put(clazz, instance);
+            }
             registeredClasses.add(clazz);
             
             processHandlersForPhase(clazz, Phase.REGISTRATION);
@@ -442,7 +452,23 @@ public class DefaultContainer implements Container, Lifecycle {
         }
         
         String simpleName = clazz.getSimpleName();
-        return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+        String baseName = Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+        
+        // Check if this name already exists and if so, include package to avoid collisions
+        if (namedComponents.containsKey(baseName) || beanDefinitions.containsKey(baseName)) {
+            String packageName = clazz.getPackage() != null ? clazz.getPackage().getName() : "";
+            String[] packageParts = packageName.split("\\.");
+            String qualifiedName = packageParts.length > 0 ? 
+                packageParts[packageParts.length - 1] + "." + baseName : baseName;
+            
+            // If still conflicts, use fully qualified name
+            if (namedComponents.containsKey(qualifiedName) || beanDefinitions.containsKey(qualifiedName)) {
+                return clazz.getName().replace(".", "_").replace("$", "_");
+            }
+            return qualifiedName;
+        }
+        
+        return baseName;
     }
     
     /**
